@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<settings version="1">
+  <section id="service.misaka.danmaku">
+    <category id="server" label="30000">
+      <group id="1">
+        <setting id="server_url" type="string" label="30001">
+          <level>0</level><default>http://127.0.0.1:7768</default>
+          <control type="edit" format="string"><heading>30001</heading></control>
+        </setting>
+        <setting id="token" type="string" label="30002">
+          <level>0</level><default></default>
+          <constraints><allowempty>true</allowempty></constraints>
+          <control type="edit" format="string"><heading>30002</heading></control>
+        </setting>
+        <setting id="verify_ssl" type="boolean" label="30033">
+          <level>0</level><default>true</default>
+          <control type="toggle"/>
+        </setting>
+        <setting id="auto_match" type="boolean" label="30003">
+          <level>0</level><default>true</default>
+          <control type="toggle"/>
+        </setting>
+        <setting id="show_picker" type="boolean" label="30004">
+          <level>0</level><default>true</default>
+          <control type="toggle"/>
+        </setting>
+        <setting id="with_related" type="boolean" label="30005">
+          <level>0</level><default>true</default>
+          <control type="toggle"/>
+        </setting>
+        <setting id="min_minutes" type="integer" label="30031">
+          <level>0</level><default>3</default>
+          <constraints><minimum>0</minimum><step>1</step><maximum>30</maximum></constraints>
+          <control type="slider" format="integer"><popup>false</popup></control>
+        </setting>
+        <setting id="test_conn" type="action" label="30030">
+          <level>0</level><data>RunScript(service.misaka.danmaku,test)</data>
+          <control type="button" format="action"><close>false</close></control>
+        </setting>
+      </group>
+    </category>
+    <category id="display" label="30010">
+      <group id="1">
+        <setting id="enabled" type="boolean" label="30011">
+          <level>0</level><default>true</default>
+          <control type="toggle"/>
+        </setting>
+        <setting id="render_mode" type="integer" label="30012">
+          <level>0</level><default>0</default>
+          <constraints>
+            <options>
+              <option label="30013">0</option>
+              <option label="30014">1</option>
+            </options>
+          </constraints>
+          <control type="spinner" format="string"/>
+        </setting>
+        <setting id="opacity" type="integer" label="30015">
+          <level>0</level><default>85</default>
+          <constraints><minimum>10</minimum><step>5</step><maximum>100</maximum></constraints>
+          <control type="slider" format="integer"><popup>false</popup></control>
+        </setting>
+        <setting id="font_name" type="string" label="30016">
+          <level>1</level><default>font13</default>
+          <control type="edit" format="string"><heading>30016</heading></control>
+        </setting>
+        <setting id="font_px" type="integer" label="30017">
+          <level>0</level><default>34</default>
+          <constraints><minimum>16</minimum><step>2</step><maximum>80</maximum></constraints>
+          <control type="slider" format="integer"><popup>false</popup></control>
+        </setting>
+        <setting id="area" type="integer" label="30018">
+          <level>0</level><default>50</default>
+          <constraints><minimum>20</minimum><step>5</step><maximum>100</maximum></constraints>
+          <control type="slider" format="integer"><popup>false</popup></control>
+        </setting>
+        <setting id="max_active" type="integer" label="30019">
+          <level>0</level><default>30</default>
+          <constraints><minimum>5</minimum><step>5</step><maximum>100</maximum></constraints>
+          <control type="slider" format="integer"><popup>false</popup></control>
+        </setting>
+        <setting id="scroll_seconds" type="integer" label="30020">
+          <level>0</level><default>9</default>
+          <constraints><minimum>4</minimum><step>1</step><maximum>20</maximum></constraints>
+          <control type="slider" format="integer"><popup>false</popup></control>
+        </setting>
+        <setting id="offset_ms" type="integer" label="30021">
+          <level>0</level><default>0</default>
+          <constraints><minimum>-30000</minimum><step>100</step><maximum>30000</maximum></constraints>
+          <control type="slider" format="integer"><popup>false</popup></control>
+        </setting>
+        <setting id="blocklist" type="string" label="30022">
+          <level>0</level><default></default>
+          <constraints><allowempty>true</allowempty></constraints>
+          <control type="edit" format="string"><heading>30022</heading></control>
+        </setting>
+        <setting id="show_top" type="boolean" label="30023">
+          <level>0</level><default>true</default>
+          <control type="toggle"/>
+        </setting>
+        <setting id="dedupe" type="boolean" label="30032">
+          <level>0</level><default>true</default>
+          <control type="toggle"/>
+        </setting>
+        <setting id="show_bottom" type="boolean" label="30024">
+          <level>0</level><default>true</default>
+          <control type="toggle"/>
+        </setting>
+      </group>
+    </category>
+  </section>
+</settings>

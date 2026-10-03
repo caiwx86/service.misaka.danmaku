@@ -1,0 +1,105 @@
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Language: zh_CN\n"
+
+msgctxt "#30000"
+msgid "服务器"
+msgstr "服务器"
+
+msgctxt "#30001"
+msgid "服务器地址 (如 http://192.168.1.2:7768)"
+msgstr "服务器地址 (如 http://192.168.1.2:7768)"
+
+msgctxt "#30002"
+msgid "API Token"
+msgstr "API Token"
+
+msgctxt "#30003"
+msgid "播放时自动匹配"
+msgstr "播放时自动匹配"
+
+msgctxt "#30004"
+msgid "匹配不确定时弹出选择窗口"
+msgstr "匹配不确定时弹出选择窗口"
+
+msgctxt "#30005"
+msgid "包含关联弹幕"
+msgstr "包含关联弹幕"
+
+msgctxt "#30010"
+msgid "显示"
+msgstr "显示"
+
+msgctxt "#30011"
+msgid "启用弹幕"
+msgstr "启用弹幕"
+
+msgctxt "#30012"
+msgid "渲染方式"
+msgstr "渲染方式"
+
+msgctxt "#30013"
+msgid "弹幕层 (不占用字幕通道)"
+msgstr "弹幕层 (不占用字幕通道)"
+
+msgctxt "#30014"
+msgid "ASS 外挂字幕 (性能好, 会占用字幕通道)"
+msgstr "ASS 外挂字幕 (性能好, 会占用字幕通道)"
+
+msgctxt "#30015"
+msgid "不透明度 (%)"
+msgstr "不透明度 (%)"
+
+msgctxt "#30016"
+msgid "弹幕层字体名 (皮肤字体, 如 font13)"
+msgstr "弹幕层字体名 (皮肤字体, 如 font13)"
+
+msgctxt "#30017"
+msgid "字号 (按 1080p 计算的像素)"
+msgstr "字号 (按 1080p 计算的像素)"
+
+msgctxt "#30018"
+msgid "显示区域 (屏幕高度 %)"
+msgstr "显示区域 (屏幕高度 %)"
+
+msgctxt "#30019"
+msgid "弹幕层同屏上限"
+msgstr "弹幕层同屏上限"
+
+msgctxt "#30020"
+msgid "滚动弹幕穿过屏幕的秒数"
+msgstr "滚动弹幕穿过屏幕的秒数"
+
+msgctxt "#30021"
+msgid "时间偏移 (毫秒)"
+msgstr "时间偏移 (毫秒)"
+
+msgctxt "#30022"
+msgid "屏蔽关键词 (逗号分隔)"
+msgstr "屏蔽关键词 (逗号分隔)"
+
+msgctxt "#30023"
+msgid "显示顶部弹幕"
+msgstr "显示顶部弹幕"
+
+msgctxt "#30024"
+msgid "显示底部弹幕"
+msgstr "显示底部弹幕"
+
+msgctxt "#30030"
+msgid "测试服务器连接"
+msgstr "测试服务器连接"
+
+msgctxt "#30031"
+msgid "短于此时长(分钟)的视频不自动匹配"
+msgstr "短于此时长(分钟)的视频不自动匹配"
+
+msgctxt "#30032"
+msgid "合并短时间内重复的刷屏弹幕"
+msgstr "合并短时间内重复的刷屏弹幕"
+
+msgctxt "#30033"
+msgid "验证 HTTPS 证书 (自签名证书时请关闭)"
+msgstr "验证 HTTPS 证书 (自签名证书时请关闭)"
+

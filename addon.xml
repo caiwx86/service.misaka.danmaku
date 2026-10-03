@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<addon id="service.misaka.danmaku" name="Misaka 弹幕" version="0.1.0" provider-name="caiwx86">
+  <requires>
+    <import addon="xbmc.python" version="3.0.0"/>
+  </requires>
+  <extension point="xbmc.service" library="service.py"/>
+  <extension point="xbmc.python.script" library="default.py">
+    <provides>executable</provides>
+  </extension>
+  <extension point="xbmc.addon.metadata">
+    <summary lang="zh_CN">Misaka 弹幕服务器客户端(弹幕层 + 外挂字幕)</summary>
+    <description lang="zh_CN">连接 misaka_danmu_server(兼容弹弹play API v1),在 Kodi 中显示弹幕。支持弹幕层叠加和 ASS 外挂字幕两种渲染方式,并可与外挂字幕合并。</description>
+    <platform>all</platform>
+    <license>MIT</license>
+  </extension>
+</addon>
