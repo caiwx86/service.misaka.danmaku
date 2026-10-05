@@ -1,6 +1,7 @@
 """misaka_danmu_server 客户端 (弹弹play API v1 兼容接口, 路径: /api/v1/{token}/...)"""
 import json
 import ssl
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -69,6 +70,20 @@ class MisakaApi(object):
             raise ApiError(result.get('errorMessage') or '服务器返回失败')
         return result
 
+    def _call_retry(self, path, params=None, body=None, timeout=20, tries=3):
+        """服务端首次搜索较慢 / 重启期间会失败: 对瞬时错误重试, 4xx 与配置错误不重试"""
+        err = None
+        for i in range(tries):
+            try:
+                return self._call(path, params, body, timeout)
+            except ApiError as e:
+                err = e
+                if any(k in str(e) for k in ('HTTP 4', '未设置', '证书', '无效', '不存在')):
+                    break
+                if i < tries - 1:
+                    time.sleep(1.5 * (i + 1))
+        raise err
+
     def _mask(self, url):
         return url.replace('/' + urllib.parse.quote(self.token) + '/', '/***/') if self.token else url
 
@@ -85,15 +100,15 @@ class MisakaApi(object):
         return self._call('version', timeout=8)
 
     def match(self, file_name):
-        return self._call('match', body={
+        return self._call_retry('match', body={
             'fileName': file_name, 'fileHash': '0' * 32, 'fileSize': 0,
             'videoDuration': 0, 'matchMode': 'fileNameOnly'})
 
-    def search_episodes(self, anime, episode=None):
+    def search_episodes(self, anime, episode=None, timeout=20, tries=2):
         params = {'anime': anime}
         if episode:
             params['episode'] = str(episode)
-        return self._call('search/episodes', params=params)
+        return self._call_retry('search/episodes', params=params, timeout=timeout, tries=tries)
 
     def comments(self, episode_id, with_related=True, retries=2):
         # 首次请求时服务端可能要现场抓取弹幕, 较慢, 超时后重试
@@ -123,6 +138,7 @@ def candidates_from_search(data, limit=80):
     for a in (data or {}).get('animes') or []:
         for e in a.get('episodes') or []:
             out.append({'episodeId': e.get('episodeId'), 'anime': a.get('animeTitle', ''),
+                        'animeId': a.get('animeId'), 'ep_title': e.get('episodeTitle', ''),
                         'label': '%s - %s' % (a.get('animeTitle', ''), e.get('episodeTitle', ''))})
             if len(out) >= limit:
                 return out

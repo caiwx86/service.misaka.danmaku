@@ -4,6 +4,7 @@ import threading
 import time
 import traceback
 import urllib.parse
+from concurrent.futures import ThreadPoolExecutor
 
 import xbmc
 import xbmcgui
@@ -14,6 +15,7 @@ from resources.lib import settings
 from resources.lib.api import (ApiError, MisakaApi, candidates_from_match,
                                candidates_from_search)
 from resources.lib.overlay import Overlay
+from resources.lib.query import build_queries, pick_episode
 
 ADDON_ID = settings.ADDON_ID
 HOME = xbmcgui.Window(10000)
@@ -67,19 +69,21 @@ class Controller(object):
         self.episode_id = None
         self.title = ''
         self.ext_sub = None
-        self.show_key = None      # 当前剧集的记忆键 (剧名|季)
-        self.gen = 0              # 播放会话序号, 防止过期线程写入
+        self.show_key = None  # 当前剧集的记忆键 (剧名|季)
+        self._meta = ('', '', '', '', 1)  # (剧名, 原名, 电影名, 文件名, 季) 供搜索构造查询
+        self.gen = 0  # 播放会话序号, 防止过期线程写入
         self._ass_active = False
         self._ass_seq = 0
         self._timer = None
         self._tlock = threading.Lock()
 
-    # ---------- 状态 (供面板读取) ----------
+    # ---------- 状态 (供面板 / 皮肤读取) ----------
     def status(self, text=None):
         if text is not None:
             HOME.setProperty('misaka.status', text)
         HOME.setProperty('misaka.episode', self.title or '')
-        HOME.setProperty('misaka.count', str(len(self.items)))
+        # 没有弹幕时留空: 皮肤 OSD 按钮据此决定是否显示数字
+        HOME.setProperty('misaka.count', str(len(self.items)) if self.items else '')
         HOME.setProperty('misaka.mode', str(self.cfg['render_mode']))
         HOME.setProperty('misaka.enabled', '1' if self.cfg['enabled'] else '0')
 
@@ -113,6 +117,7 @@ class Controller(object):
         self._ass_active = False
         self.overlay.stop()
         HOME.setProperty('misaka.candidates', '')
+        HOME.setProperty('misaka.suggest', '')
         self.refresh_cfg()
         self.status('等待匹配')
         if not self.cfg['auto_match']:
@@ -135,27 +140,49 @@ class Controller(object):
         self.status('')
 
     # ---------- 匹配 ----------
+    def _show_original(self):
+        """剧集原名 (Kodi 原生库模式下可用; 插件路径播放时取不到则返回空)"""
+        try:
+            def rpc(method, params):
+                return json.loads(xbmc.executeJSONRPC(json.dumps(
+                    {'jsonrpc': '2.0', 'id': 1, 'method': method, 'params': params})))
+            tid = rpc('Player.GetItem', {'playerid': 1, 'properties': ['tvshowid']})['result']['item'].get('tvshowid', -1)
+            if tid and tid > 0:
+                d = rpc('VideoLibrary.GetTVShowDetails', {'tvshowid': tid, 'properties': ['originaltitle']})
+                return d['result']['tvshowdetails'].get('originaltitle') or ''
+        except Exception:
+            pass
+        return ''
+
     def _names(self):
-        show = title = ''
+        show = title = original = ''
         season = ep = year = 0
         try:
             tag = self.player.getVideoInfoTag()
             show, title = tag.getTVShowTitle(), tag.getTitle()
             season, ep, year = tag.getSeason(), tag.getEpisode(), tag.getYear()
+            if not show:
+                original = tag.getOriginalTitle() or ''
         except Exception:
             pass
+        if show:
+            original = self._show_original()
         try:
             f = urllib.parse.unquote(os.path.basename(urllib.parse.urlparse(self.player.getPlayingFile()).path))
         except Exception:
             f = ''
+        s = season if season > 0 else 1
         names = []
         if show and ep > 0:
-            names.append('%s S%02dE%02d' % (show, season if season > 0 else 1, ep))
+            names.append('%s S%02dE%02d' % (show, s, ep))
+            if original and original != show:
+                names.append('%s S%02dE%02d' % (original, s, ep))
         elif title:
             names.append('%s (%s)' % (title, year) if year else title)
         if f:
             names.append(f)
         self.show_key = ('%s|%s' % (show.lower(), season)) if show else None
+        self._meta = (show, original, title if not show else '', f, s)
         return names, (show or title), (ep if ep > 0 else None)
 
     def _remembered(self, api, ep):
@@ -163,7 +190,12 @@ class Controller(object):
         anime = _load_json(MAP_FILE, {}).get(self.show_key or '')
         if not anime or not ep:
             return None
-        cands = [c for c in candidates_from_search(api.search_episodes(anime, ep)) if c['anime'] == anime]
+        try:
+            cands = [c for c in candidates_from_search(api.search_episodes(anime), 800) if c['anime'] == anime]
+        except ApiError as e:
+            log('remembered search failed: %s' % e, xbmc.LOGWARNING)
+            return None
+        cands = pick_episode(cands, ep)
         return cands[0] if len(cands) == 1 else None
 
     def _remember(self, anime):
@@ -171,6 +203,36 @@ class Controller(object):
             m = _load_json(MAP_FILE, {})
             m[self.show_key] = anime
             _save_json(MAP_FILE, m)
+
+    def _search_fallback(self, api, gen, ep):
+        """多种清洗/季变体/放宽查询并行搜索, 不带集数, 本地按集数挑集 -> (候选, 是否精确)"""
+        queries = build_queries(*self._meta)[:6]
+        if not queries:
+            return [], True
+
+        def run(item):
+            try:
+                return candidates_from_search(api.search_episodes(item[0], timeout=12, tries=2), 800)
+            except ApiError as e:
+                return e
+
+        with ThreadPoolExecutor(max_workers=3) as ex:
+            results = list(ex.map(run, queries))
+        if gen != self.gen:
+            return [], True
+        errs = [r for r in results if isinstance(r, ApiError)]
+        if errs and len(errs) == len(results):
+            raise errs[0]
+        for (q, exact), cands in zip(queries, results):
+            if isinstance(cands, ApiError):
+                continue
+            picked = pick_episode(cands, ep)
+            if picked:
+                same = [c for c in picked if c['anime'].lower() == q.lower()]
+                if len(same) == 1:  # 标题完全一致且唯一 -> 可直接加载
+                    picked = same
+                return picked[:50], exact
+        return [], True
 
     def _auto(self, gen):
         xbmc.sleep(1500)
@@ -185,7 +247,11 @@ class Controller(object):
                 return
             cands = []
             for n in names:
-                data = api.match(n)
+                try:
+                    data = api.match(n)
+                except ApiError as e:
+                    log('match %r failed: %s' % (n, e), xbmc.LOGWARNING)
+                    continue
                 if gen != self.gen:
                     return
                 cands = candidates_from_match(data)
@@ -194,16 +260,18 @@ class Controller(object):
                     return
                 if cands:
                     break
+            exact = True
             if not cands and query:
-                cands = candidates_from_search(api.search_episodes(query, ep))
-            if gen != self.gen:
-                return
+                cands, exact = self._search_fallback(api, gen, ep)
+                if gen != self.gen:
+                    return
             if not cands:
+                HOME.setProperty('misaka.suggest', self._meta[0] or self._meta[2])  # 供面板搜索框预填
                 self.status('未匹配到弹幕')
                 notify('未匹配到弹幕, 可按快捷键打开面板手动搜索')
-            elif len(cands) == 1 or not self.cfg['show_picker']:
+            elif exact and (len(cands) == 1 or not self.cfg['show_picker']):
                 self.load_episode(cands[0]['episodeId'], cands[0]['label'], gen)
-            else:
+            else:  # 放宽过的结果一律让用户确认
                 HOME.setProperty('misaka.candidates', json.dumps(cands, ensure_ascii=False))
                 self.status('请选择匹配结果')
                 xbmc.executebuiltin('RunScript(%s,panel)' % ADDON_ID)

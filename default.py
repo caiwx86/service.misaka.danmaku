@@ -12,6 +12,12 @@ from resources.lib.api import ApiError, MisakaApi
 ADDON_ID = settings.ADDON_ID
 
 
+def send(cmd):
+    """给后台服务发命令 (与面板使用同一机制), 皮肤按钮/按键可直接调用"""
+    xbmcgui.Window(10000).setProperty('misaka.cmd', json.dumps(cmd))
+    xbmc.executebuiltin('NotifyAll(%s,cmd)' % ADDON_ID)
+
+
 def test_connection():
     cfg = settings.load()
     dlg = xbmcgui.Dialog()
@@ -43,6 +49,10 @@ if __name__ == '__main__':
             xbmcgui.Dialog().ok('Misaka 弹幕', '出错了, 详情见 kodi.log:\n' + traceback.format_exc().strip().splitlines()[-1])
     elif arg == 'settings':
         xbmcaddon.Addon(ADDON_ID).openSettings()
+    elif arg in ('toggle', 'mode'):          # RunScript(service.misaka.danmaku,toggle|mode)
+        send({'action': arg})
+    elif arg == 'shift' and len(sys.argv) > 2:  # RunScript(service.misaka.danmaku,shift,500)
+        send({'action': 'shift', 'ms': int(sys.argv[2])})
     else:
         from resources.lib.ui import MisakaPanel
         path = xbmcaddon.Addon(ADDON_ID).getAddonInfo('path')
